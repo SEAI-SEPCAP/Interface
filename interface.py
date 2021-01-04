@@ -1,6 +1,17 @@
 import tkinter as tk
 from PIL import ImageTk,Image
 from threading import Timer
+from pynput import mouse
+
+IMG_X = 80
+IMG_Y = 200
+IMG_DIMX = 355
+IMG_DIMY = 240
+IMG_SEP = "/home/pi/Desktop/Interface/sep.png"
+IMG_LOGO = "/home/pi/Desktop/Interface/logo.png"
+IMG_OFF = "/home/pi/Desktop/Interface/off.png"
+IMG_CAPS = "/home/pi/Desktop/Interface/caps.PNG"
+
 
 class interface(tk.Tk):
     
@@ -9,8 +20,8 @@ class interface(tk.Tk):
         tk.Tk.__init__(self,*args,**kwargs)
         self.title("SEPCAP")
         self.geometry("800x480")
-        self.attributes("-zoomed", True)
-        self.overrideredirect(1)
+        #self.attributes("-zoomed", True)
+        #self.overrideredirect(1)
         container = tk.Frame(self,width = 800, height = 480)
         container.pack(side="top",fill="both",expand=True)
 
@@ -19,13 +30,13 @@ class interface(tk.Tk):
         
         self.frames = {}
 
-        lg = Image.open("/home/pi/Desktop/Interface/logo.png")
+        lg = Image.open(IMG_LOGO)
         lg = lg.resize((70,70),Image.ANTIALIAS)
         logo= ImageTk.PhotoImage(lg, Image.ANTIALIAS)
         
-        pageId = (iniPage,menuSep,menuCont,separacao1,separacao2,separacao3,contagem1,contagem2,calib1,calib2)
+        pageId = (iniPage,menuSep,menuCont,separacao1,separacao2,separacao3,contagem1,contagem2,calib1,calib2,calib3)
 
-        pageName = ("","MENU INICIAL","MENU INICIAL","SEPARAÇÃO","SEPARAÇÃO","SEPARAÇÃO","CONTAGEM","CONTAGEM","CALIBRAÇÃO","CALIBRAÇÃO")
+        pageName = ("","MENU INICIAL","MENU INICIAL","SEPARAÇÃO","SEPARAÇÃO","SEPARAÇÃO","CONTAGEM","CONTAGEM","CALIBRAÇÃO","CALIBRAÇÃO","CALIBRAÇÃO")
 
 
         for F,pName in zip(pageId,pageName):
@@ -41,7 +52,10 @@ class interface(tk.Tk):
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky="nsew")
             
-
+        global X,Y
+        X=0
+        Y=0
+        self.bind('<Button-1>',calculate_coordinates)
         self.showFrame(iniPage)
         self.update()
 
@@ -49,24 +63,30 @@ class interface(tk.Tk):
         frame = self.frames[cont]
         frame.tkraise()
         
-
+    
+    
     def update(self):
+        self.frames[calib2].sep = Image.open(IMG_SEP)
+        self.frames[calib2].sep = self.frames[calib2].sep.resize((IMG_DIMX,IMG_DIMY),Image.ANTIALIAS)
+        self.frames[calib2].sep= ImageTk.PhotoImage(self.frames[calib2].sep, Image.ANTIALIAS)
+        self.frames[calib2].imgSep.configure(image=self.frames[calib2].sep)
+        self.frames[calib2].imgSep.image = self.frames[calib2].sep
         global nCaps
         total = 0
-        for i in range(0,8,1):
-                n = int(nCaps[i].get())+1
-                nCaps[i].set(str(n)) 
-                total = total + n
-        nCaps[8].set(total)
-        if (n<=30):
-                self.after(2000,self.update)
+        #for i in range(0,8,1):
+        #        n = int(nCaps[i].get())+1
+        #        nCaps[i].set(str(n)) 
+        #        total = total + n
+        #nCaps[8].set(total)
+        self.frames[calib2].updateRGB()
+        self.after(500,self.update)
 
 
 class iniPage(tk.Frame):
 
     def __init__(self,parent,controller):
         tk.Frame.__init__(self,parent,bg="black")
-        lg = Image.open("/home/pi/Desktop/Interface/logo.png")
+        lg = Image.open(IMG_LOGO)
         logo= ImageTk.PhotoImage(lg, Image.ANTIALIAS)
         logoIni = tk.Label(self, image=logo, bg='black')
         logoIni.image = logo
@@ -81,9 +101,9 @@ class menuSep(tk.Frame):
     def __init__(self,parent,controller):
         tk.Frame.__init__(self,parent,bg="black")
         buttonMode = tk.Button(self, text = "MODO: SEPARAÇÃO",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=2,width=15,command=lambda:controller.showFrame(menuCont)).place(x=42,y=160)
-        buttonCalib = tk.Button(self, text = "CALIBRAR CORES",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=2,width=15,command=lambda:controller.showFrame(calib)).place(x=42,y=312)
+        buttonCalib = tk.Button(self, text = "CALIBRAR CORES",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=2,width=15,command=lambda:controller.showFrame(calib1)).place(x=42,y=312)
         buttonStart = tk.Button(self, text = "INICIAR",font=("Paytone One", 33),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=4,width=8,command=lambda:controller.showFrame(separacao1)).place(x=462,y=160)
-        off = Image.open("/home/pi/Desktop/Interface/off.png")
+        off = Image.open(IMG_OFF)
         off = off.resize((90,90),Image.ANTIALIAS)
         offImg= ImageTk.PhotoImage(off, Image.ANTIALIAS)
         buttonOff = tk.Button(self, image = offImg,command=lambda:controller.destroy())
@@ -96,9 +116,9 @@ class menuCont(tk.Frame):
     def __init__(self,parent,controller):
         tk.Frame.__init__(self,parent,bg="black")
         buttonMode = tk.Button(self, text = "MODO: CONTAGEM",font=("Paytone One", 25),bd=10,bg='grey',fg="black",activebackground='grey',height=2,width=15,command=lambda:controller.showFrame(menuSep)).place(x=42,y=160)
-        buttonCalib = tk.Button(self, text = "CALIBRAR CORES",font=("Paytone One", 25),bd=10,bg='grey',fg="black",activebackground='grey',height=2,width=15,command=lambda:controller.showFrame(calib)).place(x=42,y=312)
+        buttonCalib = tk.Button(self, text = "CALIBRAR CORES",font=("Paytone One", 25),bd=10,bg='grey',fg="black",activebackground='grey',height=2,width=15,command=lambda:controller.showFrame(calib1)).place(x=42,y=312)
         buttonStart = tk.Button(self, text = "INICIAR",font=("Paytone One", 33),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=4,width=8,command=lambda:controller.showFrame(contagem1)).place(x=462,y=160)
-        off = Image.open("/home/pi/Desktop/Interface/off.png")
+        off = Image.open(IMG_OFF)
         off = off.resize((90,90),Image.ANTIALIAS)
         offImg= ImageTk.PhotoImage(off, Image.ANTIALIAS)
         buttonOff = tk.Button(self, image = offImg,command=lambda:controller.destroy())
@@ -220,16 +240,104 @@ class calib1(tk.Frame):
 
     def __init__(self,parent,controller):
         tk.Frame.__init__(self,parent,bg="black")   
-        l1 = tk.Label(self, text="Instruções:",font=("Paytone One", 22),fg='white',bg='black').place(x=50,y=140)
-        l1 = tk.Label(self, text="Posicione a cápsula no alinhamento da câmara",font=("Paytone One", 18),fg='grey',bg='black').place(x=70,y=185)
-        lg = Image.open("/home/pi/Desktop/Interface/sep.png")
-        lg = lg.resize((325,200),Image.ANTIALIAS)
-        logo= ImageTk.PhotoImage(lg, Image.ANTIALIAS)
-        logoTop = tk.Label(self, image=logo, bg='black')
-        logoTop.image = logo
-        logoTop.place(x=100,y=240)
+        l1 = tk.Label(self, text="Selecione a cor a calibrar:",font=("Paytone One", 20),fg='white',bg='black').place(x=50,y=124)
+        caps = Image.open(IMG_CAPS)
+        caps = caps.resize((700,130),Image.ANTIALIAS)
+        caps= ImageTk.PhotoImage(caps, Image.ANTIALIAS)
+        capsImg = tk.Label(self, image=caps, bg='black')
+        capsImg.image = caps
+        capsImg.place(x=45,y=160)
         buttonBack = tk.Button(self, text = "VOLTAR",font=("Paytone One", 20),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=7,command=lambda:controller.showFrame(menuSep)).place(x=570,y=40)
-        buttonBack = tk.Button(self, text = "SEGUINTE",font=("Paytone One", 20),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=7,command=lambda:controller.showFrame(menuSep)).place(x=570,y=370)
+        button1 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#D8CA32',activebackground='#D8CA32',fg="black",height=3,width=4,command=lambda:controller.showFrame(calib2)).place(x=90,y=300)
+        button2 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#DC951F',activebackground='#DC951F',fg="black",height=3,width=4,command=lambda:controller.showFrame(calib2)).place(x=225,y=300)
+        button3 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#D8CA32',activebackground='#D8CA32',fg="black",height=3,width=4,command=lambda:controller.showFrame(calib2)).place(x=225,y=380)
+        button4 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#91AE8D',activebackground='#91AE8D',fg="black",height=3,width=4,command=lambda:controller.showFrame(calib2)).place(x=370,y=300)
+        button5 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#075730',activebackground='#075730',fg="black",height=3,width=4,command=lambda:controller.showFrame(calib2)).place(x=370,y=380)
+        button6 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#075730',activebackground='#075730',fg="black",height=3,width=4,command=lambda:controller.showFrame(calib2)).place(x=510,y=300)
+        button7 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#EA2322',activebackground='#EA2322',fg="black",height=3,width=4,command=lambda:controller.showFrame(calib2)).place(x=650,y=300)
+
+class calib2(tk.Frame):
+
+    def __init__(self,parent,controller):
+        tk.Frame.__init__(self,parent,bg="black")   
+        global nPoints
+        nPoints = 0
+        rec = tk.Canvas(self,bg='black',highlightthickness=2,width=268,height=76)
+        rec.place(x=470,y=200)
+        l1 = tk.Label(self, text="Selecione a cor pretendida:",font=("Paytone One", 20),fg='white',bg='black').place(x=50,y=140)
+        self.rgbCode = tk.StringVar(self)
+        self.rgbCode.set("")
+        l3 = tk.Label(self, textvar=self.rgbCode,font=("Paytone One", 14),fg='white',bg='black').place(x=550,y=225)
+        self.canvas = tk.Canvas(self,bg=from_rgb((0,0,0)),highlightthickness=0,width=60,height=60)
+        self.canvas.place(x=480,y=210)
+        self.sep = Image.open(IMG_SEP)
+        self.sep = self.sep.resize((IMG_DIMX,IMG_DIMY),Image.ANTIALIAS)
+        self.sep= ImageTk.PhotoImage(self.sep, Image.ANTIALIAS)
+        self.imgSep = tk.Label(self, image=self.sep, bg='black')
+        self.imgSep.image = self.sep
+        self.imgSep.place(x=IMG_X,y=IMG_Y)
+        buttonBack = tk.Button(self, text = "VOLTAR",font=("Paytone One", 20),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=7,command=lambda:controller.showFrame(menuSep)).place(x=570,y=40)
+        buttonNext = tk.Button(self, text = "SEGUINTE",font=("Paytone One", 20),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:self.exitCalib(controller)).place(x=516,y=370)
+        buttonAdd = tk.Button(self, text = "ADICIONAR PONTO",font=("Paytone One", 14),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=14,command=lambda:self.updateMean()).place(x=515,y=296)
+
+    def updateMean(self):
+        global meanR,meanG,meanB,r,g,b,nPoints
+        if (nPoints==0):
+                meanR = r
+                meanG = g
+                meanB = b
+        else:
+                meanR = int(((meanR/nPoints)+r)/(nPoints+1))
+                meanG = int(((meanG/nPoints)+g)/(nPoints+1))
+                meanB = int(((meanB/nPoints)+b)/(nPoints+1))
+        nPoints = nPoints + 1
+        
+    
+    def updateRGB(self):
+        global X,Y,r,g,b
+        if ((X<IMG_DIMX)and(Y<IMG_DIMY)):
+                print("X: "+str(X)+"   Y: "+str(Y))
+                im = Image.open(IMG_SEP)
+                im = im.resize((IMG_DIMX,IMG_DIMY),Image.ANTIALIAS)
+                im = im.convert('RGB')
+                r, g, b = im.getpixel((X, Y))
+                self.canvas.config(bg=from_rgb((r,g,b)))
+                self.rgbCode.set("R:"+str(r)+" G:"+str(g)+" B:"+str(b))
+                
+    def exitCalib(self,contr):
+        global meanR,meanG,meanB,nPoints
+        if (nPoints>0):
+                contr.frames[calib3].calibColor.config(bg=from_rgb((meanR,meanG,meanB)))
+                contr.frames[calib3].rgbCode.set("R: "+str(meanR)+"\nG: "+str(meanG)+"\nB: "+str(meanR))
+                contr.showFrame(calib3)
+                nPoints = 0
+                
+
+class calib3(tk.Frame):
+
+    def __init__(self,parent,controller):
+        tk.Frame.__init__(self,parent,bg="black")  
+        self.rgbCode = tk.StringVar(self)
+        self.rgbCode.set("")
+        canvas = tk.Canvas(self,bg="black",highlightthickness=0)
+        canvas.pack(fill='both',expand=1) 
+        canvas.create_rectangle(430,30,805,110,width=3,outline='#00B050')
+        canvas.create_rectangle(200,160,600,300,width=2,outline='white')
+        l1 = tk.Label(self, text="CALIBRAÇÃO CONCLUÍDA",font=("Paytone One", 20),fg='#00B050',bg='black').place(x=448,y=48)
+        l2 = tk.Label(self, text="COR SELECIONADA:",font=("Paytone One", 15),fg='white',bg='black').place(x=220,y=168)
+        l3 = tk.Label(self, textvar=self.rgbCode,font=("Paytone One", 14),fg='white',bg='black').place(x=240,y=202)
+        self.calibColor = tk.Canvas(self,bg=from_rgb((0,0,0)),highlightthickness=0,width=80,height=80)
+        self.calibColor.place(x=490,y=190)
+        buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 30),bd=12,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:controller.showFrame(menuSep)).place(x=233,y=340)
+
+        
+def from_rgb(rgb):
+    return "#%02x%02x%02x" % rgb
+
+def calculate_coordinates(event):
+    global X,Y
+    X = event.x
+    Y = event.y
 
 app = interface()
 app.mainloop()
