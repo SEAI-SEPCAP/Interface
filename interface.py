@@ -150,10 +150,12 @@ class menuCont(tk.Frame):
         
     def contIni(self,ctrl):
         ctrl.sms.sendPacket(
-            SMS.Address.Classification,
+            SMS.Address.Broadcast,
             SMS.Message.StartStop.type,
             SMS.Message.StartStop.Start
         )
+        global nCaps
+        nCaps[8].set(0)
         ctrl.showFrame(contagem1)
         
 
@@ -200,6 +202,12 @@ class separacao1(tk.Frame):
             SMS.Message.StartStop.type,
             SMS.Message.StartStop.Start
         )
+        global nCaps
+        for i in range(0,9,1):
+                var = tk.StringVar(self)
+                var.set("0")
+                nCaps.append(var)
+        nCaps[8].set(0)
         ctrl.showFrame(separacao2)
         
                 
@@ -217,9 +225,9 @@ class separacao2(tk.Frame):
                 var = tk.StringVar(self)
                 var.set("0")
                 nCaps.append(var)
+        nCaps[8].set(0)
         y = 160
         n=0
-        nCaps[8].set(0)
         for x in range(45,750,90):
                 canvas.create_oval(x,y,x+70,y+70,width=3,outline='grey')
                 l = tk.Label(self, text=n,font=("Paytone One", 28),fg='grey',bg='black').place(x=x+22,y=y+5)
