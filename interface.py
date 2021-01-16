@@ -1,16 +1,23 @@
+#!/usr/bin/python3 -u
+# -*- coding: utf-8 -*-
+
+import sys
 import tkinter as tk
 from PIL import ImageTk,Image
 from threading import Timer
 from pynput import mouse
+from sms import SepcapMessagingSystem as SMS
+
 
 IMG_X = 80
 IMG_Y = 200
 IMG_DIMX = 355
 IMG_DIMY = 240
-IMG_SEP = "/home/pi/Desktop/Interface/sep.png"
-IMG_LOGO = "/home/pi/Desktop/Interface/logo.png"
-IMG_OFF = "/home/pi/Desktop/Interface/off.png"
-IMG_CAPS = "/home/pi/Desktop/Interface/caps.PNG"
+IMG_SEP = "/home/pi/Desktop/Interface_v4/sep.png"
+IMG_LOGO = "/home/pi/Desktop/Interface_v4/logo.png"
+IMG_OFF = "/home/pi/Desktop/Interface_v4/off.png"
+IMG_CAPS = "/home/pi/Desktop/Interface_v4/caps.PNG"
+IMG_EMER = "/home/pi/Desktop/Interface_v4/emergencyStop.PNG"
 
 
 class interface(tk.Tk):
@@ -20,8 +27,8 @@ class interface(tk.Tk):
         tk.Tk.__init__(self,*args,**kwargs)
         self.title("SEPCAP")
         self.geometry("800x480")
-        #self.attributes("-zoomed", True)
-        #self.overrideredirect(1)
+        self.attributes("-zoomed", True)
+        self.overrideredirect(1)
         container = tk.Frame(self,width = 800, height = 480)
         container.pack(side="top",fill="both",expand=True)
 
@@ -29,20 +36,22 @@ class interface(tk.Tk):
         container.grid_columnconfigure(0,weight=1)
         
         self.frames = {}
+        
+        self.sms = SMS(open(sys.argv[1], "rb"), open(sys.argv[2], "wb"))
 
         lg = Image.open(IMG_LOGO)
         lg = lg.resize((70,70),Image.ANTIALIAS)
         logo= ImageTk.PhotoImage(lg, Image.ANTIALIAS)
         
-        pageId = (iniPage,menuSep,menuCont,separacao1,separacao2,separacao3,contagem1,contagem2,calib1,calib2,calib3)
+        pageId = (iniPage,menuSep,menuCont,separacao1,separacao2,separacao3,contagem1,contagem2,calib1,calib2,calib3,emergencyStop)
 
-        pageName = ("","MENU INICIAL","MENU INICIAL","SEPARAÇÃO","SEPARAÇÃO","SEPARAÇÃO","CONTAGEM","CONTAGEM","CALIBRAÇÃO","CALIBRAÇÃO","CALIBRAÇÃO")
+        pageName = ("","MENU INICIAL","MENU INICIAL","SEPARAÇÃO","SEPARAÇÃO","SEPARAÇÃO","CONTAGEM","CONTAGEM","CALIBRAÇÃO","CALIBRAÇÃO","CALIBRAÇÃO","")
 
 
         for F,pName in zip(pageId,pageName):
             frame = F(container,self)
             frame.config(cursor='none')
-            if (F!=iniPage):
+            if ((F!=iniPage)and(F!=emergencyStop)):
                 canvas = tk.Canvas(frame, width=300, height=80,bg="black",highlightthickness=3)
                 canvas.place(x=-5,y=30)
                 logoTop = tk.Label(frame, image=logo, bg='black')
@@ -55,16 +64,14 @@ class interface(tk.Tk):
         global X,Y
         X=0
         Y=0
-        self.bind('<Button-1>',calculate_coordinates)
+        self.frames[calib2].imgSep.bind('<Button-1>',calculate_coordinates)
         self.showFrame(iniPage)
         self.update()
 
     def showFrame(self,cont):
         frame = self.frames[cont]
         frame.tkraise()
-        
-    
-    
+            
     def update(self):
         self.frames[calib2].sep = Image.open(IMG_SEP)
         self.frames[calib2].sep = self.frames[calib2].sep.resize((IMG_DIMX,IMG_DIMY),Image.ANTIALIAS)
@@ -73,6 +80,21 @@ class interface(tk.Tk):
         self.frames[calib2].imgSep.image = self.frames[calib2].sep
         global nCaps
         total = 0
+        if self.sms.isData():
+            address, mtype, data = self.sms.readPacket()
+            print(f'Int: {address}, {mtype}, {data}')
+            if ((address==SMS.Address.Broadcast)or(address==SMS.Address.Interface)):
+                if (mtype==SMS.Message.EmergencyStop.type):
+                    if(data==SMS.Message.EmergencyStop.Emergency):
+                        self.showFrame(emergencyStop)
+                    elif(data==SMS.Message.EmergencyStop.Resume):
+                        self.showFrame(menuSep)
+                elif (mtype==SMS.Message.NewCapsule.type):
+                    n = int(nCaps[data].get())+1
+                    nCaps[data].set(str(n)) 
+                    total = total + n
+                    nCaps[8].set(total)
+            
         #for i in range(0,8,1):
         #        n = int(nCaps[i].get())+1
         #        nCaps[i].set(str(n)) 
@@ -95,6 +117,7 @@ class iniPage(tk.Frame):
         ld = tk.Label(self, text="A INICIALIZAR O SISTEMA...",font=("Paytone One", 15),fg='grey',bg='black').place(x=320,y=245)
         t = Timer(interval=5,function=lambda:controller.showFrame(menuSep))
         t.start()
+        
 
 class menuSep(tk.Frame):
 
@@ -117,14 +140,22 @@ class menuCont(tk.Frame):
         tk.Frame.__init__(self,parent,bg="black")
         buttonMode = tk.Button(self, text = "MODO: CONTAGEM",font=("Paytone One", 25),bd=10,bg='grey',fg="black",activebackground='grey',height=2,width=15,command=lambda:controller.showFrame(menuSep)).place(x=42,y=160)
         buttonCalib = tk.Button(self, text = "CALIBRAR CORES",font=("Paytone One", 25),bd=10,bg='grey',fg="black",activebackground='grey',height=2,width=15,command=lambda:controller.showFrame(calib1)).place(x=42,y=312)
-        buttonStart = tk.Button(self, text = "INICIAR",font=("Paytone One", 33),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=4,width=8,command=lambda:controller.showFrame(contagem1)).place(x=462,y=160)
+        buttonStart = tk.Button(self, text = "INICIAR",font=("Paytone One", 33),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=4,width=8,command=lambda:self.contIni(controller)).place(x=462,y=160)
         off = Image.open(IMG_OFF)
         off = off.resize((90,90),Image.ANTIALIAS)
         offImg= ImageTk.PhotoImage(off, Image.ANTIALIAS)
         buttonOff = tk.Button(self, image = offImg,command=lambda:controller.destroy())
         buttonOff.image = offImg
         buttonOff.place(x=660,y=30)
-
+        
+    def contIni(self,ctrl):
+        ctrl.sms.sendPacket(
+            SMS.Address.Classification,
+            SMS.Message.StartStop.type,
+            SMS.Message.StartStop.Start
+        )
+        ctrl.showFrame(contagem1)
+        
 
 class separacao1(tk.Frame):
    
@@ -149,7 +180,7 @@ class separacao1(tk.Frame):
         buttonDel = tk.Button(self, text = "<",font=("Paytone One", 26),bd=10,bg='#383838',fg="black",height=3,width=1,command=lambda:self.delete()).place(x=680,y=150)
         button0 = tk.Button(self, text = "0",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(0)).place(x=680,y=350)
         buttonBack = tk.Button(self, text = "VOLTAR",font=("Paytone One", 20),bd=10,bg='#c20000',activebackground='#c20000',fg="black",height=1,width=6,command=lambda:controller.showFrame(menuSep)).place(x=596,y=40)
-        buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 25),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=12,command=lambda:controller.showFrame(separacao2)).place(x=45,y=350)
+        buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 25),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=12,command=lambda:self.sepIni(controller)).place(x=45,y=350)
     
     def add(self,num):
         global nCap
@@ -162,6 +193,15 @@ class separacao1(tk.Frame):
         n = nCap.get()
         if (len(n)>0):
                 nCap.set(str(n[:-1]))
+                
+    def sepIni(self,ctrl):
+        ctrl.sms.sendPacket(
+            SMS.Address.Broadcast,
+            SMS.Message.StartStop.type,
+            SMS.Message.StartStop.Start
+        )
+        ctrl.showFrame(separacao2)
+        
                 
 class separacao2(tk.Frame):
 
@@ -187,7 +227,16 @@ class separacao2(tk.Frame):
                 n = n+1
         l2 = tk.Label(self, text="TOTAL:",font=("Paytone One", 30),fg='white',bg='black').place(x=45,y=355)
         l3 = tk.Label(self, textvar=nCaps[8],font=("Paytone One", 40),fg='#db9d00',bg='black').place(x=205,y=345)
-        buttonGo = tk.Button(self, text = "PARAR",font=("Paytone One", 25),bd=12,bg='red',activebackground='red',fg="black",height=1,width=10,command=lambda:controller.showFrame(separacao3)).place(x=470,y=350)
+        buttonGo = tk.Button(self, text = "PARAR",font=("Paytone One", 25),bd=12,bg='red',activebackground='red',fg="black",height=1,width=10,command=lambda:self.sepStop(controller)).place(x=470,y=350)
+    
+    def sepStop(self,ctrl):
+        ctrl.sms.sendPacket(
+            SMS.Address.Broadcast,
+            SMS.Message.StartStop.type,
+            SMS.Message.StartStop.Stop
+        )
+        ctrl.showFrame(separacao3)
+
 
 class separacao3(tk.Frame):
 
@@ -209,6 +258,7 @@ class separacao3(tk.Frame):
         l3 = tk.Label(self, textvar=nCaps[8],font=("Paytone One", 40),fg='#db9d00',bg='black').place(x=205,y=345)
         buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 25),bd=12,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:controller.showFrame(menuSep)).place(x=470,y=350)
 
+
 class contagem1(tk.Frame):
 
     def __init__(self,parent,controller):
@@ -220,9 +270,17 @@ class contagem1(tk.Frame):
         l1 = tk.Label(self, text="EM OPERAÇÃO...",font=("Paytone One", 20),fg='red',bg='black').place(x=517,y=48)
         l2 = tk.Label(self, text="Nº DE CÁPSULAS:",font=("Paytone One", 30),fg='white',bg='black').place(x=230,y=155)
         l3 = tk.Label(self, textvar=nCaps[8],font=("Paytone One", 50),width=5,justify='center',fg='#db9d00',bg='black').place(x=280,y=205)
-        buttonGo = tk.Button(self, text = "PARAR",font=("Paytone One", 30),bd=12,bg='red',activebackground='red',fg="black",height=1,width=10,command=lambda:controller.showFrame(contagem2)).place(x=233,y=340)
+        buttonGo = tk.Button(self, text = "PARAR",font=("Paytone One", 30),bd=12,bg='red',activebackground='red',fg="black",height=1,width=10,command=lambda:self.exitCont1(controller)).place(x=233,y=340)
+ 
+    def exitCont1(self,ctrl):
+        ctrl.sms.sendPacket(
+            SMS.Address.Broadcast,
+            SMS.Message.StartStop.type,
+            SMS.Message.StartStop.Stop
+        )
+        ctrl.showFrame(contagem2)
         
-        
+
 class contagem2(tk.Frame):
 
     def __init__(self,parent,controller):
@@ -236,6 +294,7 @@ class contagem2(tk.Frame):
         l3 = tk.Label(self, textvar=nCaps[8],font=("Paytone One", 50),width=5,justify='center',fg='#db9d00',bg='black').place(x=280,y=205)
         buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 30),bd=12,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:controller.showFrame(menuSep)).place(x=233,y=340)
 
+
 class calib1(tk.Frame):
 
     def __init__(self,parent,controller):
@@ -248,20 +307,38 @@ class calib1(tk.Frame):
         capsImg.image = caps
         capsImg.place(x=45,y=160)
         buttonBack = tk.Button(self, text = "VOLTAR",font=("Paytone One", 20),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=7,command=lambda:controller.showFrame(menuSep)).place(x=570,y=40)
-        button1 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#D8CA32',activebackground='#D8CA32',fg="black",height=3,width=4,command=lambda:controller.showFrame(calib2)).place(x=90,y=300)
-        button2 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#DC951F',activebackground='#DC951F',fg="black",height=3,width=4,command=lambda:controller.showFrame(calib2)).place(x=225,y=300)
-        button3 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#D8CA32',activebackground='#D8CA32',fg="black",height=3,width=4,command=lambda:controller.showFrame(calib2)).place(x=225,y=380)
-        button4 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#91AE8D',activebackground='#91AE8D',fg="black",height=3,width=4,command=lambda:controller.showFrame(calib2)).place(x=370,y=300)
-        button5 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#075730',activebackground='#075730',fg="black",height=3,width=4,command=lambda:controller.showFrame(calib2)).place(x=370,y=380)
-        button6 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#075730',activebackground='#075730',fg="black",height=3,width=4,command=lambda:controller.showFrame(calib2)).place(x=510,y=300)
-        button7 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#EA2322',activebackground='#EA2322',fg="black",height=3,width=4,command=lambda:controller.showFrame(calib2)).place(x=650,y=300)
+        button1 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#D8CF3B',activebackground='#D8CF3B',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,0)).place(x=65,y=300)
+        button2 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#F9EA0B',activebackground='#F9EA0B',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,1)).place(x=139,y=300)
+        button4 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#075730',activebackground='#075730',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,2)).place(x=213,y=300)
+        button5 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#D8CF3B',activebackground='#D8CF3B',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,3)).place(x=213,y=380)
+        button6 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#91AE8D',activebackground='#91AE8D',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,4)).place(x=287,y=300)
+        button7 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#075730',activebackground='#075730',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,5)).place(x=287,y=380)
+        button8 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#075730',activebackground='#075730',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,6)).place(x=360,y=300)
+        button9 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#007CCB',activebackground='#007CCB',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,7)).place(x=437,y=300)
+        button10 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#EA2322',activebackground='#EA2322',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,8)).place(x=513,y=300)
+        button11 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#EA2322',activebackground='#EA2322',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,9)).place(x=589,y=300)
+
+    def exitCalib1(self,ctrl,color):
+        ctrl.sms.sendPacket(
+            SMS.Address.Classification,
+            SMS.Message.CalibrationColor.type,
+            color
+        )
+        ctrl.showFrame(calib2)
+        
 
 class calib2(tk.Frame):
 
     def __init__(self,parent,controller):
         tk.Frame.__init__(self,parent,bg="black")   
-        global nPoints
+        global nPoints,meanR,meanG,meanB,r,g,b
         nPoints = 0
+        meanR = 0
+        meanG = 0
+        meanB = 0
+        r = 0
+        g = 0
+        b = 0
         rec = tk.Canvas(self,bg='black',highlightthickness=2,width=268,height=76)
         rec.place(x=470,y=200)
         l1 = tk.Label(self, text="Selecione a cor pretendida:",font=("Paytone One", 20),fg='white',bg='black').place(x=50,y=140)
@@ -276,27 +353,27 @@ class calib2(tk.Frame):
         self.imgSep = tk.Label(self, image=self.sep, bg='black')
         self.imgSep.image = self.sep
         self.imgSep.place(x=IMG_X,y=IMG_Y)
-        buttonBack = tk.Button(self, text = "VOLTAR",font=("Paytone One", 20),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=7,command=lambda:controller.showFrame(menuSep)).place(x=570,y=40)
-        buttonNext = tk.Button(self, text = "SEGUINTE",font=("Paytone One", 20),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:self.exitCalib(controller)).place(x=516,y=370)
+        buttonBack = tk.Button(self, text = "VOLTAR",font=("Paytone One", 20),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=7,command=lambda:self.exitCalib2(controller,"back")).place(x=570,y=40)
+        buttonNext = tk.Button(self, text = "SEGUINTE",font=("Paytone One", 20),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:self.exitCalib2(controller,"next")).place(x=516,y=370)
         buttonAdd = tk.Button(self, text = "ADICIONAR PONTO",font=("Paytone One", 14),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=14,command=lambda:self.updateMean()).place(x=515,y=296)
 
     def updateMean(self):
         global meanR,meanG,meanB,r,g,b,nPoints
-        if (nPoints==0):
+        nPoints = nPoints + 1
+        if (nPoints==1):
                 meanR = r
                 meanG = g
                 meanB = b
         else:
-                meanR = int(((meanR/nPoints)+r)/(nPoints+1))
-                meanG = int(((meanG/nPoints)+g)/(nPoints+1))
-                meanB = int(((meanB/nPoints)+b)/(nPoints+1))
-        nPoints = nPoints + 1
-        
+                meanR = int((meanR*(nPoints-1)+r)/nPoints)
+                meanG = int((meanG*(nPoints-1)+g)/nPoints)
+                meanB = int((meanB*(nPoints-1)+b)/nPoints)
     
     def updateRGB(self):
-        global X,Y,r,g,b
+        global X,Y,meanR,meanG,meanB,nPoints,r,g,b
         if ((X<IMG_DIMX)and(Y<IMG_DIMY)):
-                print("X: "+str(X)+"   Y: "+str(Y))
+                #print("X: "+str(X)+"   Y: "+str(Y)+"  MeanR: "+str(meanR)+"  MeanG: "+str(meanG)+"  MeanB: "+str(meanB)+"  nPoints: "+str(nPoints))
+                #print("R: "+str(r)+"   G: "+str(g)+"   B: "+str(b))
                 im = Image.open(IMG_SEP)
                 im = im.resize((IMG_DIMX,IMG_DIMY),Image.ANTIALIAS)
                 im = im.convert('RGB')
@@ -304,13 +381,32 @@ class calib2(tk.Frame):
                 self.canvas.config(bg=from_rgb((r,g,b)))
                 self.rgbCode.set("R:"+str(r)+" G:"+str(g)+" B:"+str(b))
                 
-    def exitCalib(self,contr):
+    def exitCalib2(self,ctrl,dest):
         global meanR,meanG,meanB,nPoints
-        if (nPoints>0):
-                contr.frames[calib3].calibColor.config(bg=from_rgb((meanR,meanG,meanB)))
-                contr.frames[calib3].rgbCode.set("R: "+str(meanR)+"\nG: "+str(meanG)+"\nB: "+str(meanR))
-                contr.showFrame(calib3)
+        if ((dest=="next")and(nPoints>0)):
+                ctrl.frames[calib3].calibColor.config(bg=from_rgb((meanR,meanG,meanB)))
+                ctrl.frames[calib3].rgbCode.set("R: "+str(meanR)+"\nG: "+str(meanG)+"\nB: "+str(meanB))
                 nPoints = 0
+                ctrl.sms.sendPacket(
+                    SMS.Address.Classification,
+                    SMS.Message.CalibrationRComponent.type,
+                    meanR
+                )
+                ctrl.sms.sendPacket(
+                    SMS.Address.Classification,
+                    SMS.Message.CalibrationGComponent.type,
+                    meanG
+                )
+                ctrl.sms.sendPacket(
+                    SMS.Address.Classification,
+                    SMS.Message.CalibrationBComponent.type,
+                    meanB
+                )
+                ctrl.showFrame(calib3)
+        elif (dest=="back"):
+                nPoints = 0
+                ctrl.showFrame(calib1)
+                
                 
 
 class calib3(tk.Frame):
@@ -329,8 +425,20 @@ class calib3(tk.Frame):
         self.calibColor = tk.Canvas(self,bg=from_rgb((0,0,0)),highlightthickness=0,width=80,height=80)
         self.calibColor.place(x=490,y=190)
         buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 30),bd=12,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:controller.showFrame(menuSep)).place(x=233,y=340)
+     
 
-        
+class emergencyStop(tk.Frame):
+
+    def __init__(self,parent,controller):
+        tk.Frame.__init__(self,parent,bg="black")   
+        imgEme = Image.open(IMG_EMER)
+        imgEme = imgEme.resize((800,480),Image.ANTIALIAS)
+        imgEme= ImageTk.PhotoImage(imgEme, Image.ANTIALIAS)
+        emeMsg = tk.Label(self, image=imgEme, bg='black')
+        emeMsg.image = imgEme
+        emeMsg.place(x=0,y=0)
+
+
 def from_rgb(rgb):
     return "#%02x%02x%02x" % rgb
 
