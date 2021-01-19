@@ -13,11 +13,11 @@ IMG_X = 80
 IMG_Y = 200
 IMG_DIMX = 355
 IMG_DIMY = 240
-IMG_SEP = "/home/pi/Desktop/Interface_v4/sep.png"
-IMG_LOGO = "/home/pi/Desktop/Interface_v4/logo.png"
-IMG_OFF = "/home/pi/Desktop/Interface_v4/off.png"
-IMG_CAPS = "/home/pi/Desktop/Interface_v4/caps.PNG"
-IMG_EMER = "/home/pi/Desktop/Interface_v4/emergencyStop.PNG"
+IMG_SEP = "sep.png"
+IMG_LOGO = "logo.png"
+IMG_OFF = "off.png"
+IMG_CAPS = "caps.PNG"
+IMG_EMER = "emergencyStop.png"
 
 
 class interface(tk.Tk):
@@ -79,7 +79,7 @@ class interface(tk.Tk):
         self.frames[calib2].imgSep.configure(image=self.frames[calib2].sep)
         self.frames[calib2].imgSep.image = self.frames[calib2].sep
         global nCaps
-        total = 0
+        
         if self.sms.isData():
             address, mtype, data = self.sms.readPacket()
             print(f'Int: {address}, {mtype}, {data}')
@@ -90,10 +90,16 @@ class interface(tk.Tk):
                     elif(data==SMS.Message.EmergencyStop.Resume):
                         self.showFrame(menuSep)
                 elif (mtype==SMS.Message.NewCapsule.type):
-                    n = int(nCaps[data].get())+1
-                    nCaps[data].set(str(n)) 
-                    total = total + n
-                    nCaps[8].set(total)
+                    i = int(data) 
+                    if (i==255):
+                        n = int(nCaps[11].get())+1
+                        nCaps[11].set(str(n)) 
+                        nCaps[0].set(n-int(nCaps[10].get()))
+                    else:
+                        n = int(nCaps[i].get())+1
+                        nCaps[i].set(str(n)) 
+                        total = int(nCaps[10].get()) + 1
+                        nCaps[10].set(total)
             
         #for i in range(0,8,1):
         #        n = int(nCaps[i].get())+1
@@ -101,7 +107,7 @@ class interface(tk.Tk):
         #        total = total + n
         #nCaps[8].set(total)
         self.frames[calib2].updateRGB()
-        self.after(500,self.update)
+        self.after(100,self.update)
 
 
 class iniPage(tk.Frame):
@@ -155,7 +161,7 @@ class menuCont(tk.Frame):
             SMS.Message.StartStop.Start
         )
         global nCaps
-        nCaps[8].set(0)
+        nCaps[11].set(0)
         ctrl.showFrame(contagem1)
         
 
@@ -203,11 +209,9 @@ class separacao1(tk.Frame):
             SMS.Message.StartStop.Start
         )
         global nCaps
-        for i in range(0,9,1):
-                var = tk.StringVar(self)
-                var.set("0")
-                nCaps.append(var)
-        nCaps[8].set(0)
+        for i in range(0,12,1):
+                nCaps[i].set(0)
+        
         ctrl.showFrame(separacao2)
         
                 
@@ -221,11 +225,10 @@ class separacao2(tk.Frame):
         l1 = tk.Label(self, text="EM OPERAÇÃO...",font=("Paytone One", 20),fg='red',bg='black').place(x=517,y=48)
         global nCaps
         nCaps = []
-        for i in range(0,9,1):
+        for i in range(0,12,1):
                 var = tk.StringVar(self)
                 var.set("0")
                 nCaps.append(var)
-        nCaps[8].set(0)
         y = 160
         n=0
         for x in range(45,750,90):
@@ -234,7 +237,7 @@ class separacao2(tk.Frame):
                 nc = tk.Label(self, textvar=nCaps[n],font=("Paytone One", 40),width=2,justify='center',fg='white',bg='black').place(x=x,y=y+78)
                 n = n+1
         l2 = tk.Label(self, text="TOTAL:",font=("Paytone One", 30),fg='white',bg='black').place(x=45,y=355)
-        l3 = tk.Label(self, textvar=nCaps[8],font=("Paytone One", 40),fg='#db9d00',bg='black').place(x=205,y=345)
+        l3 = tk.Label(self, textvar=nCaps[11],font=("Paytone One", 40),fg='#db9d00',bg='black').place(x=205,y=345)
         buttonGo = tk.Button(self, text = "PARAR",font=("Paytone One", 25),bd=12,bg='red',activebackground='red',fg="black",height=1,width=10,command=lambda:self.sepStop(controller)).place(x=470,y=350)
     
     def sepStop(self,ctrl):
@@ -263,7 +266,7 @@ class separacao3(tk.Frame):
                 nc = tk.Label(self, textvar=nCaps[n],font=("Paytone One", 40),width=2,justify='center',fg='white',bg='black').place(x=x,y=y+78)
                 n = n+1
         l2 = tk.Label(self, text="TOTAL:",font=("Paytone One", 30),fg='white',bg='black').place(x=45,y=355)
-        l3 = tk.Label(self, textvar=nCaps[8],font=("Paytone One", 40),fg='#db9d00',bg='black').place(x=205,y=345)
+        l3 = tk.Label(self, textvar=nCaps[11],font=("Paytone One", 40),fg='#db9d00',bg='black').place(x=205,y=345)
         buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 25),bd=12,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:controller.showFrame(menuSep)).place(x=470,y=350)
 
 
@@ -277,7 +280,7 @@ class contagem1(tk.Frame):
         canvas.create_rectangle(450,30,805,110,width=3,outline='red')
         l1 = tk.Label(self, text="EM OPERAÇÃO...",font=("Paytone One", 20),fg='red',bg='black').place(x=517,y=48)
         l2 = tk.Label(self, text="Nº DE CÁPSULAS:",font=("Paytone One", 30),fg='white',bg='black').place(x=230,y=155)
-        l3 = tk.Label(self, textvar=nCaps[8],font=("Paytone One", 50),width=5,justify='center',fg='#db9d00',bg='black').place(x=280,y=205)
+        l3 = tk.Label(self, textvar=nCaps[11],font=("Paytone One", 50),width=5,justify='center',fg='#db9d00',bg='black').place(x=280,y=205)
         buttonGo = tk.Button(self, text = "PARAR",font=("Paytone One", 30),bd=12,bg='red',activebackground='red',fg="black",height=1,width=10,command=lambda:self.exitCont1(controller)).place(x=233,y=340)
  
     def exitCont1(self,ctrl):
@@ -299,7 +302,7 @@ class contagem2(tk.Frame):
         canvas.create_rectangle(450,30,805,110,width=3,outline='#00B050')
         l1 = tk.Label(self, text="OPERAÇÃO CONCLUÍDA",font=("Paytone One", 20),fg='#00B050',bg='black').place(x=465,y=48)
         l2 = tk.Label(self, text="Nº DE CÁPSULAS:",font=("Paytone One", 30),fg='white',bg='black').place(x=230,y=155)
-        l3 = tk.Label(self, textvar=nCaps[8],font=("Paytone One", 50),width=5,justify='center',fg='#db9d00',bg='black').place(x=280,y=205)
+        l3 = tk.Label(self, textvar=nCaps[11],font=("Paytone One", 50),width=5,justify='center',fg='#db9d00',bg='black').place(x=280,y=205)
         buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 30),bd=12,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:controller.showFrame(menuSep)).place(x=233,y=340)
 
 
@@ -457,5 +460,3 @@ def calculate_coordinates(event):
 
 app = interface()
 app.mainloop()
-
-
