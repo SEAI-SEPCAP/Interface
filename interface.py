@@ -44,9 +44,9 @@ class interface(tk.Tk):
         lg = lg.resize((70,70),Image.ANTIALIAS)
         logo= ImageTk.PhotoImage(lg, Image.ANTIALIAS)
         
-        pageId = (iniPage,menuSep,menuCont,separacao1,separacao2,separacao3,contagem1,contagem2,calib1,calib2,calib3,emergencyStop)
+        pageId = (iniPage,menuSep,menuCont,separacao1,separacao2,contagem1,contagem2,contagem3,calib1,calib2,calib3,emergencyStop)
 
-        pageName = ("","MENU INICIAL","MENU INICIAL","SEPARAÇÃO","SEPARAÇÃO","SEPARAÇÃO","CONTAGEM","CONTAGEM","CALIBRAÇÃO","CALIBRAÇÃO","CALIBRAÇÃO","")
+        pageName = ("","MENU INICIAL","MENU INICIAL","SEPARAÇÃO","SEPARAÇÃO","CONTAGEM","CONTAGEM","CONTAGEM","CALIBRAÇÃO","CALIBRAÇÃO","CALIBRAÇÃO","")
 
 
         for F,pName in zip(pageId,pageName):
@@ -75,10 +75,10 @@ class interface(tk.Tk):
             
     def update(self):
         
-        global nCaps,sepOn,nCap
+        global nCaps,contOn,nCap
         
-        if (sepOn and (int(nCaps[11].get())==nCap)):
-            self.frames[separacao2].sepStop(self)
+        if (contOn and (int(nCaps[11].get())==int(nCap.get()))):
+            self.frames[contagem2].contStop(self)
 
         if self.sms.isData():
             address, mtype, data = self.sms.readPacket()
@@ -136,13 +136,23 @@ class menuSep(tk.Frame):
         tk.Frame.__init__(self,parent,bg="black")
         buttonMode = tk.Button(self, text = "MODO: SEPARAÇÃO",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=2,width=15,command=lambda:controller.showFrame(menuCont)).place(x=42,y=160)
         buttonCalib = tk.Button(self, text = "CALIBRAR CORES",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=2,width=15,command=lambda:controller.showFrame(calib1)).place(x=42,y=312)
-        buttonStart = tk.Button(self, text = "INICIAR",font=("Paytone One", 33),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=4,width=8,command=lambda:controller.showFrame(separacao1)).place(x=462,y=160)
+        buttonStart = tk.Button(self, text = "INICIAR",font=("Paytone One", 33),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=4,width=8,command=lambda:self.sepIni(controller)).place(x=462,y=160)
         off = Image.open(IMG_OFF)
         off = off.resize((90,90),Image.ANTIALIAS)
         offImg= ImageTk.PhotoImage(off, Image.ANTIALIAS)
         buttonOff = tk.Button(self, image = offImg,command=lambda:controller.destroy())
         buttonOff.image = offImg
         buttonOff.place(x=660,y=30)
+
+    def sepIni(self,ctrl):
+        ctrl.sms.sendPacket(
+            SMS.Address.Broadcast,
+            SMS.Message.StartStop.type,
+            SMS.Message.StartStop.Start
+        )
+        for i in range(0,12,1):
+                nCaps[i].set(0)
+        ctrl.showFrame(separacao1)
 
 
 class menuCont(tk.Frame):
@@ -151,77 +161,16 @@ class menuCont(tk.Frame):
         tk.Frame.__init__(self,parent,bg="black")
         buttonMode = tk.Button(self, text = "MODO: CONTAGEM",font=("Paytone One", 25),bd=10,bg='grey',fg="black",activebackground='grey',height=2,width=15,command=lambda:controller.showFrame(menuSep)).place(x=42,y=160)
         buttonCalib = tk.Button(self, text = "CALIBRAR CORES",font=("Paytone One", 25),bd=10,bg='grey',fg="black",activebackground='grey',height=2,width=15,command=lambda:controller.showFrame(calib1)).place(x=42,y=312)
-        buttonStart = tk.Button(self, text = "INICIAR",font=("Paytone One", 33),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=4,width=8,command=lambda:self.contIni(controller)).place(x=462,y=160)
+        buttonStart = tk.Button(self, text = "INICIAR",font=("Paytone One", 33),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=4,width=8,command=lambda:controller.showFrame(contagem1)).place(x=462,y=160)
         off = Image.open(IMG_OFF)
         off = off.resize((90,90),Image.ANTIALIAS)
         offImg= ImageTk.PhotoImage(off, Image.ANTIALIAS)
         buttonOff = tk.Button(self, image = offImg,command=lambda:controller.destroy())
         buttonOff.image = offImg
         buttonOff.place(x=660,y=30)
-        
-    def contIni(self,ctrl):
-        ctrl.sms.sendPacket(
-            SMS.Address.Broadcast,
-            SMS.Message.StartStop.type,
-            SMS.Message.StartStop.Start
-        )
-        global nCaps
-        nCaps[11].set(0)
-        ctrl.showFrame(contagem1)
-        
-
+                
+                
 class separacao1(tk.Frame):
-   
-    def __init__(self,parent,controller):
-        tk.Frame.__init__(self,parent,bg="black")
-        l = tk.Label(self, text="Nº DE \nCÁPSULAS:",font=("Paytone One", 22),fg='white',bg='black',justify='left').place(x=40,y=142)
-        canvas = tk.Canvas(self, width=140, height=77,bg="black",highlightthickness=3)
-        canvas.place(x=225,y=148)
-        global nCap
-        nCap = tk.StringVar(self)
-        nCap.set("")
-        w = tk.Label(self, textvar=nCap,font=("Paytone One", 36),fg='#db9d00',bg='black').place(x=247,y=151)
-        button3 = tk.Button(self, text = "3",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(3)).place(x=590,y=150)   
-        button6 = tk.Button(self, text = "6",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(6)).place(x=590,y=250)
-        button9 = tk.Button(self, text = "9",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(9)).place(x=590,y=350)
-        button2 = tk.Button(self, text = "2",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(2)).place(x=500,y=150)
-        button5 = tk.Button(self, text = "5",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(5)).place(x=500,y=250)
-        button8 = tk.Button(self, text = "8",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(8)).place(x=500,y=350)
-        button1 = tk.Button(self, text = "1",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(1)).place(x=410,y=150)
-        button4 = tk.Button(self, text = "4",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(4)).place(x=410,y=250)
-        button7 = tk.Button(self, text = "7",font=("Paytone One", 25),bd=10,bg='grey',fg="black",height=1,width=1,command=lambda:self.add(7)).place(x=410,y=350)
-        buttonDel = tk.Button(self, text = "<",font=("Paytone One", 26),bd=10,bg='#383838',fg="black",height=3,width=1,command=lambda:self.delete()).place(x=680,y=150)
-        button0 = tk.Button(self, text = "0",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(0)).place(x=680,y=350)
-        buttonBack = tk.Button(self, text = "VOLTAR",font=("Paytone One", 20),bd=10,bg='#c20000',activebackground='#c20000',fg="black",height=1,width=6,command=lambda:controller.showFrame(menuSep)).place(x=596,y=40)
-        buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 25),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=12,command=lambda:self.sepIni(controller)).place(x=45,y=350)
-    
-    def add(self,num):
-        global nCap
-        n = nCap.get()
-        if (len(n)<3):
-                nCap.set(str(n)+str(num))
-        
-    def delete(self):    
-        global nCap
-        n = nCap.get()
-        if (len(n)>0):
-                nCap.set(str(n[:-1]))
-                
-    def sepIni(self,ctrl):
-        global nCaps,sepOn
-        if (nCaps!=""):
-            ctrl.sms.sendPacket(
-                SMS.Address.Broadcast,
-                SMS.Message.StartStop.type,
-                SMS.Message.StartStop.Start
-            )
-            sepOn = True
-            for i in range(0,12,1):
-                    nCaps[i].set(0)
-            ctrl.showFrame(separacao2)
-        
-                
-class separacao2(tk.Frame):
 
     def __init__(self,parent,controller):
         tk.Frame.__init__(self,parent,bg="black") 
@@ -244,20 +193,18 @@ class separacao2(tk.Frame):
                 n = n+1
         l2 = tk.Label(self, text="TOTAL:",font=("Paytone One", 30),fg='white',bg='black').place(x=45,y=355)
         l3 = tk.Label(self, textvar=nCaps[11],font=("Paytone One", 40),fg='#db9d00',bg='black').place(x=205,y=345)
-        buttonGo = tk.Button(self, text = "PARAR",font=("Paytone One", 25),bd=12,bg='red',activebackground='red',fg="black",height=1,width=10,command=lambda:self.sepStop(controller)).place(x=470,y=350)
+        buttonStop = tk.Button(self, text = "PARAR",font=("Paytone One", 25),bd=12,bg='red',activebackground='red',fg="black",height=1,width=10,command=lambda:self.sepStop(controller)).place(x=470,y=350)
     
     def sepStop(self,ctrl):
-        global sepOn
-        sepOn = False
         ctrl.sms.sendPacket(
             SMS.Address.Broadcast,
             SMS.Message.StartStop.type,
             SMS.Message.StartStop.Stop
         )
-        ctrl.showFrame(separacao3)
+        ctrl.showFrame(separacao2)
 
 
-class separacao3(tk.Frame):
+class separacao2(tk.Frame):
 
     def __init__(self,parent,controller):
         tk.Frame.__init__(self,parent,bg="black") 
@@ -279,6 +226,58 @@ class separacao3(tk.Frame):
 
 
 class contagem1(tk.Frame):
+   
+    def __init__(self,parent,controller):
+        tk.Frame.__init__(self,parent,bg="black")
+        l = tk.Label(self, text="Nº DE \nCÁPSULAS:",font=("Paytone One", 22),fg='white',bg='black',justify='left').place(x=40,y=142)
+        canvas = tk.Canvas(self, width=140, height=77,bg="black",highlightthickness=3)
+        canvas.place(x=225,y=148)
+        global nCap,contOn
+        contOn = False
+        nCap = tk.StringVar(self)
+        nCap.set("")
+        w = tk.Label(self, textvar=nCap,font=("Paytone One", 36),fg='#db9d00',bg='black').place(x=247,y=151)
+        button3 = tk.Button(self, text = "3",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(3)).place(x=590,y=150)   
+        button6 = tk.Button(self, text = "6",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(6)).place(x=590,y=250)
+        button9 = tk.Button(self, text = "9",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(9)).place(x=590,y=350)
+        button2 = tk.Button(self, text = "2",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(2)).place(x=500,y=150)
+        button5 = tk.Button(self, text = "5",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(5)).place(x=500,y=250)
+        button8 = tk.Button(self, text = "8",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(8)).place(x=500,y=350)
+        button1 = tk.Button(self, text = "1",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(1)).place(x=410,y=150)
+        button4 = tk.Button(self, text = "4",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(4)).place(x=410,y=250)
+        button7 = tk.Button(self, text = "7",font=("Paytone One", 25),bd=10,bg='grey',fg="black",height=1,width=1,command=lambda:self.add(7)).place(x=410,y=350)
+        buttonDel = tk.Button(self, text = "<",font=("Paytone One", 26),bd=10,bg='#383838',fg="black",height=3,width=1,command=lambda:self.delete()).place(x=680,y=150)
+        button0 = tk.Button(self, text = "0",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(0)).place(x=680,y=350)
+        buttonBack = tk.Button(self, text = "VOLTAR",font=("Paytone One", 20),bd=10,bg='#c20000',activebackground='#c20000',fg="black",height=1,width=6,command=lambda:controller.showFrame(menuCont)).place(x=596,y=40)
+        buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 25),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=12,command=lambda:self.contIni(controller)).place(x=45,y=350)
+    
+    def add(self,num):
+        global nCap
+        n = nCap.get()
+        if (len(n)<3):
+                nCap.set(str(n)+str(num))
+        
+    def delete(self):    
+        global nCap
+        n = nCap.get()
+        if (len(n)>0):
+                nCap.set(str(n[:-1]))
+                
+    def contIni(self,ctrl):
+        global nCap,contOn
+        if (nCap.get()!=""):
+            ctrl.sms.sendPacket(
+                SMS.Address.Broadcast,
+                SMS.Message.StartStop.type,
+                SMS.Message.StartStop.Start
+            )
+            contOn = True
+            global nCaps
+            nCaps[11].set(0)
+            ctrl.showFrame(contagem2)
+
+
+class contagem2(tk.Frame):
 
     def __init__(self,parent,controller):
         tk.Frame.__init__(self,parent,bg="black") 
@@ -289,18 +288,20 @@ class contagem1(tk.Frame):
         l1 = tk.Label(self, text="EM OPERAÇÃO...",font=("Paytone One", 20),fg='red',bg='black').place(x=517,y=48)
         l2 = tk.Label(self, text="Nº DE CÁPSULAS:",font=("Paytone One", 30),fg='white',bg='black').place(x=230,y=155)
         l3 = tk.Label(self, textvar=nCaps[11],font=("Paytone One", 50),width=5,justify='center',fg='#db9d00',bg='black').place(x=280,y=205)
-        buttonGo = tk.Button(self, text = "PARAR",font=("Paytone One", 30),bd=12,bg='red',activebackground='red',fg="black",height=1,width=10,command=lambda:self.exitCont1(controller)).place(x=233,y=340)
+        buttonGo = tk.Button(self, text = "PARAR",font=("Paytone One", 30),bd=12,bg='red',activebackground='red',fg="black",height=1,width=10,command=lambda:self.contStop(controller)).place(x=233,y=340)
  
-    def exitCont1(self,ctrl):
+    def contStop(self,ctrl):
+        global contOn
+        contOn = False
         ctrl.sms.sendPacket(
             SMS.Address.Broadcast,
             SMS.Message.StartStop.type,
             SMS.Message.StartStop.Stop
         )
-        ctrl.showFrame(contagem2)
+        ctrl.showFrame(contagem3)
         
 
-class contagem2(tk.Frame):
+class contagem3(tk.Frame):
 
     def __init__(self,parent,controller):
         tk.Frame.__init__(self,parent,bg="black")  
@@ -311,7 +312,7 @@ class contagem2(tk.Frame):
         l1 = tk.Label(self, text="OPERAÇÃO CONCLUÍDA",font=("Paytone One", 20),fg='#00B050',bg='black').place(x=465,y=48)
         l2 = tk.Label(self, text="Nº DE CÁPSULAS:",font=("Paytone One", 30),fg='white',bg='black').place(x=230,y=155)
         l3 = tk.Label(self, textvar=nCaps[11],font=("Paytone One", 50),width=5,justify='center',fg='#db9d00',bg='black').place(x=280,y=205)
-        buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 30),bd=12,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:controller.showFrame(menuSep)).place(x=233,y=340)
+        buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 30),bd=12,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:controller.showFrame(menuCont)).place(x=233,y=340)
 
 
 class calib1(tk.Frame):
