@@ -95,7 +95,7 @@ class interface(tk.Tk):
                         n = int(nCaps[11].get())+1
                         nCaps[11].set(str(n)) 
                         nCaps[0].set(max(0,n-int(nCaps[10].get())))
-                    else:
+                    elif (i!=0):
                         n = int(nCaps[i].get())+1
                         nCaps[i].set(str(n)) 
                         total = int(nCaps[10].get()) + 1
@@ -161,13 +161,18 @@ class menuCont(tk.Frame):
         tk.Frame.__init__(self,parent,bg="black")
         buttonMode = tk.Button(self, text = "MODO: CONTAGEM",font=("Paytone One", 25),bd=10,bg='grey',fg="black",activebackground='grey',height=2,width=15,command=lambda:controller.showFrame(menuSep)).place(x=42,y=160)
         buttonCalib = tk.Button(self, text = "CALIBRAR CORES",font=("Paytone One", 25),bd=10,bg='grey',fg="black",activebackground='grey',height=2,width=15,command=lambda:controller.showFrame(calib1)).place(x=42,y=312)
-        buttonStart = tk.Button(self, text = "INICIAR",font=("Paytone One", 33),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=4,width=8,command=lambda:controller.showFrame(contagem1)).place(x=462,y=160)
+        buttonStart = tk.Button(self, text = "INICIAR",font=("Paytone One", 33),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=4,width=8,command=lambda:self.iniCont(controller)).place(x=462,y=160)
         off = Image.open(IMG_OFF)
         off = off.resize((90,90),Image.ANTIALIAS)
         offImg= ImageTk.PhotoImage(off, Image.ANTIALIAS)
         buttonOff = tk.Button(self, image = offImg,command=lambda:controller.destroy())
         buttonOff.image = offImg
         buttonOff.place(x=660,y=30)
+
+    def iniCont(self,ctrl)
+        global nCap
+        nCap.set("")
+        ctrl.showFrame(contagem1)
                 
                 
 class separacao1(tk.Frame):
@@ -245,8 +250,8 @@ class contagem1(tk.Frame):
         button8 = tk.Button(self, text = "8",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(8)).place(x=500,y=350)
         button1 = tk.Button(self, text = "1",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(1)).place(x=410,y=150)
         button4 = tk.Button(self, text = "4",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(4)).place(x=410,y=250)
-        button7 = tk.Button(self, text = "7",font=("Paytone One", 25),bd=10,bg='grey',fg="black",height=1,width=1,command=lambda:self.add(7)).place(x=410,y=350)
-        buttonDel = tk.Button(self, text = "<",font=("Paytone One", 26),bd=10,bg='#383838',fg="black",height=3,width=1,command=lambda:self.delete()).place(x=680,y=150)
+        button7 = tk.Button(self, text = "7",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(7)).place(x=410,y=350)
+        buttonDel = tk.Button(self, text = "<",font=("Paytone One", 26),bd=10,bg='#383838',activebackground='#383838',fg="black",height=3,width=1,command=lambda:self.delete()).place(x=680,y=150)
         button0 = tk.Button(self, text = "0",font=("Paytone One", 25),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=1,command=lambda:self.add(0)).place(x=680,y=350)
         buttonBack = tk.Button(self, text = "VOLTAR",font=("Paytone One", 20),bd=10,bg='#c20000',activebackground='#c20000',fg="black",height=1,width=6,command=lambda:controller.showFrame(menuCont)).place(x=596,y=40)
         buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 25),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=12,command=lambda:self.contIni(controller)).place(x=45,y=350)
