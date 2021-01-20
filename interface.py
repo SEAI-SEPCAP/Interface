@@ -3,6 +3,7 @@
 
 import sys
 import tkinter as tk
+import time
 from PIL import ImageTk,Image
 from threading import Timer
 from pynput import mouse
@@ -11,9 +12,9 @@ from sms import SepcapMessagingSystem as SMS
 
 IMG_X = 80
 IMG_Y = 200
-IMG_DIMX = 355
-IMG_DIMY = 240
-IMG_SEP = "sep.png"
+IMG_DIMX = 90
+IMG_DIMY = 270
+IMG_SEP = "sep.jpg"
 IMG_LOGO = "logo.png"
 IMG_OFF = "off.png"
 IMG_CAPS = "caps.PNG"
@@ -73,16 +74,15 @@ class interface(tk.Tk):
         frame.tkraise()
             
     def update(self):
-        self.frames[calib2].sep = Image.open(IMG_SEP)
-        self.frames[calib2].sep = self.frames[calib2].sep.resize((IMG_DIMX,IMG_DIMY),Image.ANTIALIAS)
-        self.frames[calib2].sep= ImageTk.PhotoImage(self.frames[calib2].sep, Image.ANTIALIAS)
-        self.frames[calib2].imgSep.configure(image=self.frames[calib2].sep)
-        self.frames[calib2].imgSep.image = self.frames[calib2].sep
-        global nCaps
         
+        global nCaps,sepOn,nCap
+        
+        if (sepOn and (int(nCaps[11].get())==nCap)):
+            self.frames[separacao2].sepStop(self)
+
         if self.sms.isData():
             address, mtype, data = self.sms.readPacket()
-            print(f'Int: {address}, {mtype}, {data}')
+            #print(f'Int: {address}, {mtype}, {data}')
             if ((address==SMS.Address.Broadcast)or(address==SMS.Address.Interface)):
                 if (mtype==SMS.Message.EmergencyStop.type):
                     if(data==SMS.Message.EmergencyStop.Emergency):
@@ -94,13 +94,18 @@ class interface(tk.Tk):
                     if (i==255):
                         n = int(nCaps[11].get())+1
                         nCaps[11].set(str(n)) 
-                        nCaps[0].set(n-int(nCaps[10].get()))
+                        nCaps[0].set(max(0,n-int(nCaps[10].get())))
                     else:
                         n = int(nCaps[i].get())+1
                         nCaps[i].set(str(n)) 
                         total = int(nCaps[10].get()) + 1
                         nCaps[10].set(total)
-            
+                elif (mtype==SMS.Message.CalibrationConf.type):
+                    self.frames[calib2].sep = Image.open(IMG_SEP)
+                    self.frames[calib2].sep = self.frames[calib2].sep.resize((IMG_DIMX,IMG_DIMY),Image.ANTIALIAS)
+                    self.frames[calib2].sep= ImageTk.PhotoImage(self.frames[calib2].sep, Image.ANTIALIAS)
+                    self.frames[calib2].imgSep.configure(image=self.frames[calib2].sep)
+                    self.frames[calib2].imgSep.image = self.frames[calib2].sep
         #for i in range(0,8,1):
         #        n = int(nCaps[i].get())+1
         #        nCaps[i].set(str(n)) 
@@ -203,16 +208,17 @@ class separacao1(tk.Frame):
                 nCap.set(str(n[:-1]))
                 
     def sepIni(self,ctrl):
-        ctrl.sms.sendPacket(
-            SMS.Address.Broadcast,
-            SMS.Message.StartStop.type,
-            SMS.Message.StartStop.Start
-        )
-        global nCaps
-        for i in range(0,12,1):
-                nCaps[i].set(0)
-        
-        ctrl.showFrame(separacao2)
+        global nCaps,sepOn
+        if (nCaps!=""):
+            ctrl.sms.sendPacket(
+                SMS.Address.Broadcast,
+                SMS.Message.StartStop.type,
+                SMS.Message.StartStop.Start
+            )
+            sepOn = True
+            for i in range(0,12,1):
+                    nCaps[i].set(0)
+            ctrl.showFrame(separacao2)
         
                 
 class separacao2(tk.Frame):
@@ -241,6 +247,8 @@ class separacao2(tk.Frame):
         buttonGo = tk.Button(self, text = "PARAR",font=("Paytone One", 25),bd=12,bg='red',activebackground='red',fg="black",height=1,width=10,command=lambda:self.sepStop(controller)).place(x=470,y=350)
     
     def sepStop(self,ctrl):
+        global sepOn
+        sepOn = False
         ctrl.sms.sendPacket(
             SMS.Address.Broadcast,
             SMS.Message.StartStop.type,
@@ -403,21 +411,20 @@ class calib2(tk.Frame):
                     SMS.Message.CalibrationR.type,
                     meanR
                 )
+                time.sleep(0.05)
                 ctrl.sms.sendPacket(
                     SMS.Address.Classification,
                     SMS.Message.CalibrationG.type,
                     meanG
                 )
+                time.sleep(0.05)
                 ctrl.sms.sendPacket(
                     SMS.Address.Classification,
                     SMS.Message.CalibrationB.type,
                     meanB
                 )
-                ctrl.sms.sendPacket(
-                    SMS.Address.Classification,
-                    SMS.Message.CalibrationConf.type,
-                    0
-                )
+                
+                
                 ctrl.showFrame(calib3)
         elif (dest=="back"):
                 nPoints = 0
