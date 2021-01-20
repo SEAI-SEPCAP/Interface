@@ -107,7 +107,7 @@ class interface(tk.Tk):
         #        total = total + n
         #nCaps[8].set(total)
         self.frames[calib2].updateRGB()
-        self.after(100,self.update)
+        self.after(50,self.update)
 
 
 class iniPage(tk.Frame):
@@ -318,16 +318,16 @@ class calib1(tk.Frame):
         capsImg.image = caps
         capsImg.place(x=45,y=160)
         buttonBack = tk.Button(self, text = "VOLTAR",font=("Paytone One", 20),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=7,command=lambda:controller.showFrame(menuSep)).place(x=570,y=40)
-        button1 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#D8CF3B',activebackground='#D8CF3B',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,0)).place(x=65,y=300)
-        button2 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#F9EA0B',activebackground='#F9EA0B',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,1)).place(x=139,y=300)
-        button4 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#075730',activebackground='#075730',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,2)).place(x=213,y=300)
-        button5 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#D8CF3B',activebackground='#D8CF3B',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,3)).place(x=213,y=380)
-        button6 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#91AE8D',activebackground='#91AE8D',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,4)).place(x=287,y=300)
-        button7 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#075730',activebackground='#075730',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,5)).place(x=287,y=380)
-        button8 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#075730',activebackground='#075730',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,6)).place(x=360,y=300)
-        button9 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#007CCB',activebackground='#007CCB',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,7)).place(x=437,y=300)
-        button10 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#EA2322',activebackground='#EA2322',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,8)).place(x=513,y=300)
-        button11 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#EA2322',activebackground='#EA2322',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,9)).place(x=589,y=300)
+        button1 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#D8CF3B',activebackground='#D8CF3B',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,6)).place(x=65,y=300)
+        button2 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#F9EA0B',activebackground='#F9EA0B',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,0)).place(x=139,y=300)
+        button4 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#075730',activebackground='#075730',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,4)).place(x=213,y=300)
+        button5 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#D8CF3B',activebackground='#D8CF3B',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,6)).place(x=213,y=380)
+        button6 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#91AE8D',activebackground='#91AE8D',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,5)).place(x=287,y=300)
+        button7 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#075730',activebackground='#075730',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,4)).place(x=287,y=380)
+        button8 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#075730',activebackground='#075730',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,4)).place(x=360,y=300)
+        button9 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#007CCB',activebackground='#007CCB',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,3)).place(x=437,y=300)
+        button10 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#EA2322',activebackground='#EA2322',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,1)).place(x=513,y=300)
+        button11 = tk.Button(self, text = "",font=("Paytone One", 10),bd=0,bg='#EA2322',activebackground='#EA2322',fg="black",height=3,width=3,command=lambda:self.exitCalib1(controller,1)).place(x=589,y=300)
 
     def exitCalib1(self,ctrl,color):
         ctrl.sms.sendPacket(
@@ -400,18 +400,23 @@ class calib2(tk.Frame):
                 nPoints = 0
                 ctrl.sms.sendPacket(
                     SMS.Address.Classification,
-                    SMS.Message.CalibrationRComponent.type,
+                    SMS.Message.CalibrationR.type,
                     meanR
                 )
                 ctrl.sms.sendPacket(
                     SMS.Address.Classification,
-                    SMS.Message.CalibrationGComponent.type,
+                    SMS.Message.CalibrationG.type,
                     meanG
                 )
                 ctrl.sms.sendPacket(
                     SMS.Address.Classification,
-                    SMS.Message.CalibrationBComponent.type,
+                    SMS.Message.CalibrationB.type,
                     meanB
+                )
+                ctrl.sms.sendPacket(
+                    SMS.Address.Classification,
+                    SMS.Message.CalibrationConf.type,
+                    0
                 )
                 ctrl.showFrame(calib3)
         elif (dest=="back"):
