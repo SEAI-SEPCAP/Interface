@@ -77,7 +77,7 @@ class interface(tk.Tk):
         
         global nCaps,contOn,nCap
         
-        if (contOn and (int(nCaps[11].get())==int(nCap.get()))):
+        if (contOn and (nCap.get()!="") and (int(nCaps[11].get())==int(nCap.get()))):
             self.frames[contagem2].contStop(self)
 
         if self.sms.isData():
@@ -126,7 +126,7 @@ class iniPage(tk.Frame):
         logoIni.place(x=120,y=105)
         w = tk.Label(self, text="SEPCAP",font=("Paytone One", 40),fg='white',bg='black').place(x=320,y=180)
         ld = tk.Label(self, text="A INICIALIZAR O SISTEMA...",font=("Paytone One", 15),fg='grey',bg='black').place(x=320,y=245)
-        t = Timer(interval=5,function=lambda:controller.showFrame(menuSep))
+        t = Timer(interval=1,function=lambda:controller.showFrame(menuSep))
         t.start()
         
 
@@ -269,17 +269,15 @@ class contagem1(tk.Frame):
                 nCap.set(str(n[:-1]))
                 
     def contIni(self,ctrl):
-        global nCap,contOn
-        if (nCap.get()!=""):
-            ctrl.sms.sendPacket(
-                SMS.Address.Broadcast,
-                SMS.Message.StartStop.type,
-                SMS.Message.StartStop.Start
-            )
-            contOn = True
-            global nCaps
-            nCaps[11].set(0)
-            ctrl.showFrame(contagem2)
+        global contOn,nCaps
+        ctrl.sms.sendPacket(
+            SMS.Address.Individualization,
+            SMS.Message.StartStop.type,
+            SMS.Message.StartStop.Start
+        )
+        contOn = True
+        nCaps[11].set(0)
+        ctrl.showFrame(contagem2)
 
 
 class contagem2(tk.Frame):
@@ -299,7 +297,7 @@ class contagem2(tk.Frame):
         global contOn
         contOn = False
         ctrl.sms.sendPacket(
-            SMS.Address.Broadcast,
+            SMS.Address.Individualization,
             SMS.Message.StartStop.type,
             SMS.Message.StartStop.Stop
         )
