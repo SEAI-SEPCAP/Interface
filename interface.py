@@ -10,10 +10,13 @@ from pynput import mouse
 from sms import SepcapMessagingSystem as SMS
 
 
+#calibration image position and dimensions
 IMG_X = 80
 IMG_Y = 200
 IMG_DIMX = 90
 IMG_DIMY = 270
+
+#images location
 IMG_SEP = "sep.jpg"
 IMG_LOGO = "logo.png"
 IMG_OFF = "off.png"
@@ -21,6 +24,7 @@ IMG_CAPS = "caps.PNG"
 IMG_EMER = "emergencyStop.png"
 
 
+#main class containing all the pages
 class interface(tk.Tk):
     
     def __init__(self,*args,**kwargs):
@@ -72,7 +76,8 @@ class interface(tk.Tk):
     def showFrame(self,cont):
         frame = self.frames[cont]
         frame.tkraise()
-            
+    
+    #runs every 50ms
     def update(self):
         
         global nCaps,contOn,nCap
@@ -80,6 +85,7 @@ class interface(tk.Tk):
         if (contOn and (nCap.get()!="") and (int(nCaps[11].get())==int(nCap.get()))):
             self.frames[contagem2].contStop(self)
 
+        #data receiving
         if self.sms.isData():
             address, mtype, data = self.sms.readPacket()
             #print(f'Int: {address}, {mtype}, {data}')
@@ -90,6 +96,7 @@ class interface(tk.Tk):
                     elif(data==SMS.Message.EmergencyStop.Resume):
                         self.showFrame(menuSep)
                 elif (mtype==SMS.Message.NewCapsule.type):
+                    #capsule's counters update
                     i = int(data) 
                     if (i==255):
                         n = int(nCaps[11].get())+1
@@ -101,6 +108,7 @@ class interface(tk.Tk):
                         total = int(nCaps[10].get()) + 1
                         nCaps[10].set(total)
                 elif (mtype==SMS.Message.CalibrationConf.type):
+                    #calibration image update
                     self.frames[calib2].sep = Image.open(IMG_SEP)
                     self.frames[calib2].sep = self.frames[calib2].sep.resize((IMG_DIMX,IMG_DIMY),Image.ANTIALIAS)
                     self.frames[calib2].sep= ImageTk.PhotoImage(self.frames[calib2].sep, Image.ANTIALIAS)
@@ -115,6 +123,7 @@ class interface(tk.Tk):
         self.after(50,self.update)
 
 
+#loading screen
 class iniPage(tk.Frame):
 
     def __init__(self,parent,controller):
@@ -130,6 +139,7 @@ class iniPage(tk.Frame):
         t.start()
         
 
+#separation mode menu
 class menuSep(tk.Frame):
 
     def __init__(self,parent,controller):
@@ -155,6 +165,7 @@ class menuSep(tk.Frame):
         ctrl.showFrame(separacao1)
 
 
+#counting mode menu
 class menuCont(tk.Frame):
 
     def __init__(self,parent,controller):
@@ -169,12 +180,13 @@ class menuCont(tk.Frame):
         buttonOff.image = offImg
         buttonOff.place(x=660,y=30)
 
-    def iniCont(self,ctrl)
+    def iniCont(self,ctrl):
         global nCap
         nCap.set("")
         ctrl.showFrame(contagem1)
                 
                 
+#page with output counters (during separation operation)
 class separacao1(tk.Frame):
 
     def __init__(self,parent,controller):
@@ -209,6 +221,7 @@ class separacao1(tk.Frame):
         ctrl.showFrame(separacao2)
 
 
+#page with output counters (at the end of the separation operation)
 class separacao2(tk.Frame):
 
     def __init__(self,parent,controller):
@@ -230,6 +243,7 @@ class separacao2(tk.Frame):
         buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 25),bd=12,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:controller.showFrame(menuSep)).place(x=470,y=350)
 
 
+#page with a keypad that allows the user to insert the number of capsules to be counted
 class contagem1(tk.Frame):
    
     def __init__(self,parent,controller):
@@ -256,12 +270,14 @@ class contagem1(tk.Frame):
         buttonBack = tk.Button(self, text = "VOLTAR",font=("Paytone One", 20),bd=10,bg='#c20000',activebackground='#c20000',fg="black",height=1,width=6,command=lambda:controller.showFrame(menuCont)).place(x=596,y=40)
         buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 25),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=12,command=lambda:self.contIni(controller)).place(x=45,y=350)
     
+    #add's a digit to the capsule's number
     def add(self,num):
         global nCap
         n = nCap.get()
         if (len(n)<3):
                 nCap.set(str(n)+str(num))
-        
+    
+    #remove's the right digit of the capsule's number
     def delete(self):    
         global nCap
         n = nCap.get()
@@ -280,6 +296,7 @@ class contagem1(tk.Frame):
         ctrl.showFrame(contagem2)
 
 
+#displays the capsules' counter during the counting operation
 class contagem2(tk.Frame):
 
     def __init__(self,parent,controller):
@@ -304,6 +321,7 @@ class contagem2(tk.Frame):
         ctrl.showFrame(contagem3)
         
 
+#displays the counting operation's final result 
 class contagem3(tk.Frame):
 
     def __init__(self,parent,controller):
@@ -318,6 +336,7 @@ class contagem3(tk.Frame):
         buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 30),bd=12,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:controller.showFrame(menuCont)).place(x=233,y=340)
 
 
+#page that allows the selection of the capsule's color to be calibrated
 class calib1(tk.Frame):
 
     def __init__(self,parent,controller):
@@ -350,6 +369,7 @@ class calib1(tk.Frame):
         ctrl.showFrame(calib2)
         
 
+#page that allows the user to select multiple points from the detected capsule
 class calib2(tk.Frame):
 
     def __init__(self,parent,controller):
@@ -380,6 +400,7 @@ class calib2(tk.Frame):
         buttonNext = tk.Button(self, text = "SEGUINTE",font=("Paytone One", 20),bd=10,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:self.exitCalib2(controller,"next")).place(x=516,y=370)
         buttonAdd = tk.Button(self, text = "ADICIONAR PONTO",font=("Paytone One", 14),bd=10,bg='grey',activebackground='grey',fg="black",height=1,width=14,command=lambda:self.updateMean()).place(x=515,y=296)
 
+    #rbg's code mean update
     def updateMean(self):
         global meanR,meanG,meanB,r,g,b,nPoints
         nPoints = nPoints + 1
@@ -392,6 +413,7 @@ class calib2(tk.Frame):
                 meanG = int((meanG*(nPoints-1)+g)/nPoints)
                 meanB = int((meanB*(nPoints-1)+b)/nPoints)
     
+    #rgb code update
     def updateRGB(self):
         global X,Y,meanR,meanG,meanB,nPoints,r,g,b
         if ((X<IMG_DIMX)and(Y<IMG_DIMY)):
@@ -435,7 +457,7 @@ class calib2(tk.Frame):
                 ctrl.showFrame(calib1)
                 
                 
-
+#page displaying the final rgb code after the calibration process
 class calib3(tk.Frame):
 
     def __init__(self,parent,controller):
@@ -454,6 +476,7 @@ class calib3(tk.Frame):
         buttonGo = tk.Button(self, text = "AVANÇAR",font=("Paytone One", 30),bd=12,bg='#00B050',activebackground='#00B050',fg="black",height=1,width=10,command=lambda:controller.showFrame(menuSep)).place(x=233,y=340)
      
 
+#information presented during the emergency state 
 class emergencyStop(tk.Frame):
 
     def __init__(self,parent,controller):
@@ -466,9 +489,11 @@ class emergencyStop(tk.Frame):
         emeMsg.place(x=0,y=0)
 
 
+#rgb's code format change
 def from_rgb(rgb):
     return "#%02x%02x%02x" % rgb
 
+#click event coordinates
 def calculate_coordinates(event):
     global X,Y
     X = event.x
